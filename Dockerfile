@@ -9,4 +9,5 @@ FROM node:14-alpine
 WORKDIR /opt/app
 ADD package.json ./
 RUN npm install --only=prod
+COPY --from=build /opt/app ./
 CMD ["node", "./server.js"]
