@@ -2,13 +2,13 @@ import { readFileSync } from "fs";
 import express = require("express");
 import https = require("https");
 import { Server } from "socket.io";
+import ocsp = require("ocsp");
 
 const app = express();
-const port = 3000;
 const tlsPort = 3443;
 const options = {
-    key: readFileSync("/my/key.pem"),
-    cert: readFileSync("/my/cert.pem"),
+    key: readFileSync("./my/key.pem"),
+    cert: readFileSync("./my/cert.pem"),
 };
 
 app.get("/", (req, res) => {
@@ -19,35 +19,26 @@ app.get("/ok", (req, res) => {
     res.send("okkk");
 });
 
-const server = app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
+const server = ocsp.Server.create(options);
+
+server.addCert(43, "good");
+server.addCert(44, "revoked", {
+    revocationTime: new Date(),
+    revocationReason: "CACompromise",
 });
 
-const tlsServer = https.createServer(options, app).listen(tlsPort, () => {
-    console.log(`Example app listening on port ${port}`);
+const tlsServer = server.listen(tlsPort, () => {
+    console.log(`Example app listening on port ${tlsPort}`);
 });
 
-const io = new Server();
-
-io.on("connection", (socket) => {
-    console.log(`connect ${socket.id}`);
-
-    socket.on("ping", (cb) => {
-        console.log("ping");
-        cb();
-    });
-
-    socket.on("disconnect", () => {
-        console.log(`disconnect ${socket.id}`);
-    });
-});
-
-io.attach(server);
-
-const tlsIo = new Server();
+const tlsIo = new Server(/*tlsServer*/);
 
 tlsIo.on("connection", (socket) => {
-    console.log(`connect ${socket.id}`);
+    console.log(`connected with transport ${socket.conn.transport.name}`);
+
+    socket.conn.on("upgrade", (transport) => {
+        console.log(`transport upgraded to ${transport.name}`);
+    });
 
     socket.on("ping", (cb) => {
         console.log("ping");
@@ -59,4 +50,4 @@ tlsIo.on("connection", (socket) => {
     });
 });
 //dfs
-tlsIo.attach(server);
+tlsIo.attach(tlsServer);
