@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs_1 = require("fs");
 var express = require("express");
+var https = require("https");
 var socket_io_1 = require("socket.io");
-var ocsp = require("ocsp");
 var app = express();
 var tlsPort = 3443;
 var options = {
@@ -16,13 +16,7 @@ app.get("/", function (req, res) {
 app.get("/ok", function (req, res) {
     res.send("okkk");
 });
-var server = ocsp.Server.create(options);
-server.addCert(43, "good");
-server.addCert(44, "revoked", {
-    revocationTime: new Date(),
-    revocationReason: "CACompromise",
-});
-var tlsServer = server.listen(tlsPort, function () {
+var tlsServer = https.createServer(options, app).listen(tlsPort, function () {
     console.log("Example app listening on port ".concat(tlsPort));
 });
 var tlsIo = new socket_io_1.Server( /*tlsServer*/);

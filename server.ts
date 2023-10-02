@@ -2,7 +2,6 @@ import { readFileSync } from "fs";
 import express = require("express");
 import https = require("https");
 import { Server } from "socket.io";
-import ocsp = require("ocsp");
 
 const app = express();
 const tlsPort = 3443;
@@ -19,15 +18,7 @@ app.get("/ok", (req, res) => {
     res.send("okkk");
 });
 
-const server = ocsp.Server.create(options);
-
-server.addCert(43, "good");
-server.addCert(44, "revoked", {
-    revocationTime: new Date(),
-    revocationReason: "CACompromise",
-});
-
-const tlsServer = server.listen(tlsPort, () => {
+const tlsServer = https.createServer(options, app).listen(tlsPort, () => {
     console.log(`Example app listening on port ${tlsPort}`);
 });
 
